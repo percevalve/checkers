@@ -1,0 +1,4 @@
+checkers
+========
+
+Simple checkers
