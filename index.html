@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+
+<!--
+  COLLABORATORS:
+
+  Code used:
+  for the canvas size command
+  http://stackoverflow.com/questions/9286483/wrong-rectangle-size-in-canavs
+  to clear the canvas
+  http://stackoverflow.com/questions/2142535/how-to-clear-the-canvas-for-redrawing
+  to click through the arrow canvas
+  http://css-tricks.com/almanac/properties/p/pointer-events/
+  offset in Firefox
+  http://stackoverflow.com/questions/12704686/html5-with-jquery-e-offsetx-is-undefined-in-firefox
+  
+-->
+<html>
+
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+<title>Checkerboard</title>
+
+<!-- Load style sheets -->
+<link rel="stylesheet" type="text/css" href="mainLayout.css" />
+
+<!-- Load any supplemental Javascript libraries here -->
+<script type="text/javascript" src="external_js/jquery-1.9.0.min.js"></script>
+<script type="text/javascript" src="checker.js"></script>
+<script type="text/javascript" src="boardEvent.js"></script>
+<script type="text/javascript" src="board.js"></script>
+<script type="text/javascript" src="draw_board.js"></script>
+<script type="text/javascript" src="rules.js"></script>
+
+<script type="text/javascript">
+
+//This script extracts parameters from the URL
+//from jquery-howto.blogspot.com
+
+    $.extend({
+        getUrlVars : function() {
+            var vars = [], hash;
+            var hashes = window.location.href.slice(
+                    window.location.href.indexOf('?') + 1).split('&');
+            for ( var i = 0; i < hashes.length; i++) {
+                hash = hashes[i].split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            }
+            return vars;
+        },
+        getUrlVar : function(name) {
+            return $.getUrlVars()[name];
+        }
+    });
+
+    var DEFAULT_BOARD_SIZE = 8;
+
+    //data model
+    var board;
+    var rules;
+    var whoseTurn = "black";	
+
+    var directionOf = function(color) {
+      if (color == "black") {
+        return -1;
+      }
+      return 1;
+    }
+
+    // Fill in this function to toggle the display for whose turn
+    // The color parameter should be either "black" or "red"
+    var toggleTurn = function(color) {
+        whoseTurn = (color === "red") ? "black" : "red";
+        return whoseTurn;
+    }
+
+    
+
+
+
+    // This allows the Javascript code inside this block to only run when the page
+    // has finished loading in the browser.
+    $(document).ready(function() {
+
+        if ($.getUrlVar('size') && $.getUrlVar('size') >= 6) {
+            board = new Board($.getUrlVar('size'));
+        } else {
+            board = new Board(DEFAULT_BOARD_SIZE);
+        }
+
+    PIXEL_WIDTH = 400;
+    PIXEL_HEIGHT = 400;
+	  rules = new Rules(board);
+    boardUI = drawBoard(board,"#content",rules);
+    
+
+
+     	// Your code here
+
+      var statusCheck = function(){
+        $("#btnUndo").prop("disabled",boardUI.isUndoPossible());
+        $("#btnRedo").prop("disabled",boardUI.isRedoPossible());
+        $("#theTurns").attr("class",whoseTurn);
+      }
+
+      board.addEventListener('add',function (e) {
+            boardUI.addChecker(e);
+    		// Your code here
+    	},true);
+
+    	board.addEventListener('move',function (e) {
+    		// Your code here
+        console.log("move");
+            boardUI.moveChecker(e);
+            whoseTurn = toggleTurn(whoseTurn);
+            $("#btnUndo").prop("disabled",false);
+            boardUI.checkUI();
+            statusCheck();
+    	},true);
+
+        board.addEventListener('remove', function(e) {
+        	// Your code here
+            boardUI.removeChecker(e);
+        }, true);
+
+        board.addEventListener('promote',function (e) {
+    		// Your code here
+        console.log("promote");
+            boardUI.getCheckers();
+    	},true);
+
+        
+        $("#btnNewGame").click(function(evt) {
+            
+            boardUI.init();
+            board.prepareNewGame();
+            //Black start (so you need to toggle turn assuming red were playing.)
+            toggleTurn("red");
+            $("#btnUndo").prop("disabled",true);
+            statusCheck();
+        });
+
+        $("#btnAutoMove").click(function(evt) {
+          var playerColor = whoseTurn;
+          var playerDirection = directionOf(playerColor);
+          var result = rules.makeRandomMove(playerColor, playerDirection);
+          if (result != null) {
+            //whoseTurn = toggleTurn(playerColor);
+          }
+        });
+
+
+
+        $("#btnUndo").click(function(evt) {
+         boardUI.undoLastMove();
+         boardUI.checkUI();
+         statusCheck();
+       });
+        $("#btnRedo").click(function(evt) {
+         boardUI.redoLastMove();
+         boardUI.checkUI();
+         statusCheck();
+       });
+
+        board.prepareNewGame();
+        boardUI.init();
+        //Black starts
+        toggleTurn("red");
+        statusCheck();
+        //setInterval(function(){$("#btnAutoMove").trigger("click")},1000);
+
+    });
+</script>
+
+
+</head>
+
+<body>
+
+<table id="mainTable">
+    <tr>
+        <td id="navigation">
+          <table>
+			  <tr><td id="theTurns"></td></tr>
+              <tr><td><input id="btnNewGame" type="button" name="new" value="New Game"/></td></tr>
+              <tr><td><input id="btnAutoMove" type="button" name="new" value="Auto Move"/></td></tr>
+              <tr><td><input id="btnUndo" type="button" name="undo" value="Undo"/></td></tr>
+              <tr><td><input id="btnRedo" type="button" name="redo" value="Redo"/></td></tr>
+
+            </table>
+        </td>
+
+        <td id="content">
+        </td>
+    </tr>
+
+   </table>
+</body>
+
+</html>
